@@ -634,7 +634,7 @@
       </div>
     </div>
     <div class="row" style="gap:.5rem">
-      <button class="btn btn-ghost" id="cheatModeBtn" style="font-size:.875rem" onclick="toggleCheatMode()">Snydemode: OFF</button>
+      <button class="btn btn-ghost hidden" id="cheatModeBtn" style="font-size:.875rem" onclick="toggleCheatMode()">Snydemode: OFF</button>
       <button class="btn btn-ghost" style="font-size:.875rem" onclick="openTermsModal()">Begreber</button>
       <button class="btn btn-ghost" style="font-size:.875rem" onclick="endGame()">Afslut</button>
     </div>
@@ -816,6 +816,7 @@
 //  DATA
 // ═══════════════════════════════════════════════════
 const DATA_KEY = 'matSpil_v1';
+const ENABLE_CHEAT = false;
 
 function loadData() {
   try {
