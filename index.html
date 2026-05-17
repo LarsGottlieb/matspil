@@ -1,0 +1,1498 @@
+<!DOCTYPE html>
+<html lang="da">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MatSpil – Brøkforkortelse</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
+      color: #e2e8f0;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* ── SCREENS ── */
+    .screen {
+      display: none;
+      width: 100%;
+      max-width: 980px;
+      padding: 2rem 1.5rem;
+      flex-direction: column;
+      align-items: center;
+      gap: 1.5rem;
+      min-height: 100vh;
+      justify-content: center;
+    }
+    .screen.active { display: flex; }
+
+    /* ── TYPOGRAPHY ── */
+    h1 {
+      font-size: 2.5rem;
+      font-weight: 800;
+      background: linear-gradient(90deg, #818cf8, #c084fc);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      text-align: center;
+    }
+    h2 { font-size: 1.4rem; font-weight: 700; color: #c7d2fe; text-align: center; }
+    .subtitle { color: #64748b; text-align: center; max-width: 440px; font-size: 0.95rem; }
+
+    /* ── CARD ── */
+    .card {
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 16px;
+      padding: 1.5rem;
+      width: 100%;
+    }
+
+    /* ── BUTTONS ── */
+    .btn {
+      padding: 0.75rem 1.5rem;
+      border: none;
+      border-radius: 10px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .btn:hover { transform: translateY(-1px); filter: brightness(1.1); }
+    .btn:active { transform: translateY(0); }
+    .btn:disabled { opacity: .45; cursor: not-allowed; filter: none; transform: none; }
+    .btn-primary  { background: linear-gradient(135deg, #6366f1, #8b5cf6); color: #fff; }
+    .btn-success  { background: linear-gradient(135deg, #22c55e, #16a34a); color: #fff; }
+    .btn-ghost    { background: transparent; border: 1px solid #334155; color: #94a3b8; }
+    .btn-ghost:hover { border-color: #6366f1; color: #c7d2fe; }
+    .btn-danger   { background: linear-gradient(135deg, #ef4444, #dc2626); color: #fff; }
+
+    /* ── PLAYER LIST ── */
+    .player-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      width: 100%;
+      max-width: 420px;
+      max-height: 320px;
+      overflow-y: auto;
+    }
+    .player-item {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      padding: 0.875rem 1.25rem;
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .player-item:hover { border-color: #6366f1; box-shadow: 0 0 0 1px #6366f160; }
+    .player-avatar {
+      width: 42px; height: 42px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #6366f1, #a78bfa);
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 700; font-size: 1rem; flex-shrink: 0;
+    }
+    .player-info { flex: 1; }
+    .player-name  { font-weight: 600; color: #e2e8f0; }
+    .player-best  { font-size: 0.78rem; color: #64748b; margin-top: 2px; }
+    .empty-state  { text-align: center; color: #475569; padding: 2rem; font-style: italic; }
+
+    /* ── MODAL ── */
+    .modal-overlay {
+      display: none;
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,.75);
+      z-index: 100;
+      align-items: center; justify-content: center;
+    }
+    .modal-overlay.active { display: flex; }
+    .modal {
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 20px;
+      padding: 2rem;
+      width: 90%; max-width: 400px;
+      display: flex; flex-direction: column; gap: 1.25rem;
+    }
+    .modal h3 { font-size: 1.2rem; color: #e2e8f0; }
+    .input-group { display: flex; flex-direction: column; gap: 0.4rem; }
+    .input-group label { font-size: 0.875rem; color: #94a3b8; font-weight: 500; }
+    .input-group input {
+      padding: 0.75rem 1rem;
+      background: #0f172a;
+      border: 1px solid #334155;
+      border-radius: 8px;
+      color: #e2e8f0;
+      font-size: 1rem;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .input-group input:focus { border-color: #6366f1; }
+    .modal-actions { display: flex; gap: 0.75rem; justify-content: flex-end; }
+
+    /* ── LEARNING MODAL ── */
+    .learn-modal {
+      max-width: 760px;
+      width: 95%;
+      max-height: 88vh;
+      overflow-y: auto;
+    }
+    .learn-intro {
+      color: #94a3b8;
+      font-size: 0.92rem;
+      line-height: 1.45;
+    }
+    .term-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1rem;
+    }
+    .term-card {
+      background: #0f172a;
+      border: 1px solid #334155;
+      border-radius: 14px;
+      padding: 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+    .term-title {
+      font-weight: 700;
+      color: #c7d2fe;
+      font-size: 1rem;
+    }
+    .term-rule {
+      font-size: 0.9rem;
+      color: #94a3b8;
+      line-height: 1.35;
+    }
+    .chip-row { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+    .term-chip {
+      border-radius: 999px;
+      padding: 0.2rem 0.6rem;
+      border: 1px solid #334155;
+      color: #94a3b8;
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+    }
+    .term-chip.good {
+      border-color: #22c55e60;
+      color: #4ade80;
+      background: #052e16;
+    }
+    .term-chip.warn {
+      border-color: #f59e0b60;
+      color: #fbbf24;
+      background: #3a2a07;
+    }
+    .fraction-visual {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      flex-wrap: wrap;
+    }
+    .pizza {
+      width: 62px;
+      height: 62px;
+      border-radius: 50%;
+      border: 2px solid #334155;
+      position: relative;
+      background: conic-gradient(#60a5fa calc(var(--fill, 0) * 1%), #1f2937 0);
+      overflow: hidden;
+      box-shadow: inset 0 0 0 1px #1e293b;
+    }
+    .pizza-cut {
+      position: absolute;
+      background: #334155;
+      opacity: 0.95;
+    }
+    .pizza-cut.radial {
+      top: 50%;
+      left: 50%;
+      width: 2px;
+      height: 140%;
+      transform-origin: center center;
+      transform: translate(-50%, -50%) rotate(var(--angle));
+    }
+    .pizza-cut.crust {
+      inset: 4px;
+      border-radius: 50%;
+      border: none;
+      background: transparent;
+      pointer-events: none;
+    }
+    .visual-text {
+      color: #94a3b8;
+      font-size: 0.84rem;
+      line-height: 1.35;
+    }
+    .concept-card {
+      background: #0f172a;
+      border: 1px solid #334155;
+      border-radius: 14px;
+      padding: 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.8rem;
+    }
+    .concept-title {
+      font-weight: 700;
+      color: #c7d2fe;
+      font-size: 0.98rem;
+    }
+    .fraction-concept {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 1.2rem;
+      flex-wrap: wrap;
+    }
+    .concept-left {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .frac-stack {
+      display: inline-flex;
+      flex-direction: column;
+      align-items: center;
+      min-width: 56px;
+    }
+    .frac-num,
+    .frac-den {
+      font-size: 1.45rem;
+      font-weight: 800;
+      color: #e2e8f0;
+      line-height: 1.1;
+    }
+    .frac-line {
+      width: 54px;
+      height: 3px;
+      border-radius: 3px;
+      background: #94a3b8;
+      margin: 0.25rem 0;
+    }
+    .concept-labels {
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+      font-size: 0.84rem;
+      color: #94a3b8;
+    }
+    .concept-labels strong { color: #e2e8f0; }
+    .mixed-badge {
+      border-radius: 999px;
+      border: 1px solid #6366f160;
+      background: #6366f120;
+      color: #c7d2fe;
+      padding: 0.25rem 0.65rem;
+      font-size: 0.8rem;
+      font-weight: 700;
+      letter-spacing: 0.01em;
+    }
+    .whole-note {
+      color: #94a3b8;
+      font-size: 0.82rem;
+      line-height: 1.3;
+      text-align: center;
+      max-width: 180px;
+    }
+    .concept-defs {
+      display: grid;
+      gap: 0.5rem;
+      font-size: 0.9rem;
+      color: #cbd5e1;
+      line-height: 1.35;
+    }
+    .concept-defs strong { color: #e2e8f0; }
+    .concept-demo-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 0.75rem;
+    }
+    .concept-demo {
+      background: #111827;
+      border: 1px solid #334155;
+      border-radius: 10px;
+      padding: 0.8rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      align-items: center;
+      text-align: center;
+    }
+    .demo-title {
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: #a5b4fc;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .demo-explain {
+      font-size: 0.82rem;
+      color: #94a3b8;
+      line-height: 1.3;
+    }
+    .mixed-inline {
+      display: flex;
+      align-items: center;
+      gap: 0.45rem;
+    }
+    .whole-pill {
+      padding: 0.2rem 0.45rem;
+      border-radius: 6px;
+      background: #14532d;
+      color: #bbf7d0;
+      border: 1px solid #22c55e60;
+      font-size: 1.05rem;
+      font-weight: 800;
+      line-height: 1;
+    }
+
+    /* ── CHALLENGE CARDS ── */
+    .challenge-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1rem;
+      width: 100%; max-width: 560px;
+    }
+    .challenge-card {
+      background: #1e293b;
+      border: 2px solid #334155;
+      border-radius: 16px;
+      padding: 1.5rem;
+      cursor: pointer;
+      transition: all 0.2s;
+      text-align: center;
+      display: flex; flex-direction: column; align-items: center; gap: 0.75rem;
+    }
+    .challenge-card:hover:not(.disabled) { border-color: #6366f1; background: #252f45; transform: translateY(-2px); }
+    .challenge-card.disabled { opacity: .4; cursor: not-allowed; }
+    .challenge-icon  { font-size: 2.2rem; }
+    .challenge-title { font-weight: 700; color: #e2e8f0; }
+    .challenge-desc  { font-size: 0.8rem; color: #64748b; }
+    .challenge-badge {
+      font-size: 0.7rem; padding: 0.2rem 0.6rem;
+      border-radius: 999px;
+      background: #6366f120; color: #a5b4fc;
+      border: 1px solid #6366f140;
+    }
+
+    /* ── GAME HEADER ── */
+    .game-header {
+      display: flex; align-items: center; justify-content: space-between;
+      width: 100%;
+      padding: 0.875rem 1.25rem;
+      background: #1e293b;
+      border-radius: 14px;
+      border: 1px solid #334155;
+    }
+    .player-tag { display: flex; align-items: center; gap: 0.75rem; }
+    .score-display { display: flex; align-items: center; gap: 1.5rem; }
+    .score-item { text-align: center; }
+    .score-value { font-size: 1.5rem; font-weight: 800; color: #a78bfa; }
+    .score-label  { font-size: 0.68rem; color: #64748b; text-transform: uppercase; letter-spacing: .06em; }
+
+    /* ── GAME BOARD ── */
+    .game-board {
+      position: relative;
+      display: flex;
+      align-items: stretch;
+      width: 100%;
+      min-height: 440px;
+    }
+    .fractions-col {
+      flex: 1;
+      display: flex; flex-direction: column;
+      gap: 0.75rem;
+      padding: 0.5rem 0;
+      justify-content: space-around;
+    }
+    .fractions-col.left  { padding-right: 0.5rem; }
+    .fractions-col.right { padding-left:  0.5rem; }
+    .board-middle { width: 100px; flex-shrink: 0; }
+
+    /* fraction cards */
+    .frac-card {
+      background: #1e293b;
+      border: 2px solid #334155;
+      border-radius: 14px;
+      padding: 1rem 0.75rem;
+      cursor: pointer;
+      transition: border-color .18s, background .18s, box-shadow .18s;
+      display: flex; align-items: center; justify-content: center;
+      min-height: 76px;
+      user-select: none;
+    }
+    .frac-card:hover:not(.matched):not(.error) { border-color: #6366f1; background: #252f45; }
+    .frac-card.selected { border-color: #818cf8; background: #1d1b4b; box-shadow: 0 0 0 3px #6366f140; }
+    .frac-card.matched  { border-color: #22c55e; background: #052e16; opacity: .75; cursor: default; pointer-events: none; }
+    .frac-card.error    { border-color: #ef4444; background: #2d0f0f; animation: shake .4s ease; }
+
+    @keyframes shake {
+      0%,100%{ transform: translateX(0); }
+      20%    { transform: translateX(-6px); }
+      40%    { transform: translateX(6px); }
+      60%    { transform: translateX(-4px); }
+      80%    { transform: translateX(4px); }
+    }
+
+    /* fraction display */
+    .fraction {
+      display: inline-flex; flex-direction: column; align-items: center;
+      font-size: 1.45rem; font-weight: 700; line-height: 1.15; color: #e2e8f0;
+    }
+    .fraction .n { border-bottom: 2.5px solid currentColor; padding: 0 0.4rem 3px; min-width: 2rem; text-align: center; }
+    .fraction .d { padding: 3px 0.4rem 0; text-align: center; }
+    .mixed-num {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      color: #e2e8f0;
+      font-weight: 800;
+      font-size: 1.25rem;
+    }
+    .mixed-whole {
+      font-size: 1.55rem;
+      line-height: 1;
+      color: #c7d2fe;
+      min-width: 1.2rem;
+      text-align: right;
+    }
+
+    /* SVG overlay */
+    #svgCanvas {
+      position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+      pointer-events: none; overflow: visible;
+    }
+
+    /* ── INSTRUCTION ── */
+    .instruction { text-align: center; color: #64748b; font-size: 0.88rem; padding: 0.25rem; min-height: 1.4rem; }
+
+    /* ── ROUND RESULT ── */
+    .round-result {
+      display: none; flex-direction: column; align-items: center; gap: 1rem;
+      width: 100%;
+      background: #1e293b; border: 1px solid #334155; border-radius: 16px;
+      padding: 1.75rem 2rem;
+    }
+    .round-result.visible { display: flex; }
+    .round-title  { font-size: 1.3rem; font-weight: 700; color: #c7d2fe; }
+    .round-pts    { font-size: 3rem; font-weight: 900; color: #a78bfa; }
+    .round-break  { font-size: 0.875rem; color: #64748b; text-align: center; }
+    .round-actions { display: flex; gap: 1rem; flex-wrap: wrap; justify-content: center; }
+    .bonus-quiz {
+      display: none;
+      width: 100%;
+      max-width: 700px;
+      background: #0f172a;
+      border: 1px solid #334155;
+      border-radius: 12px;
+      padding: 1rem;
+      gap: 0.8rem;
+      flex-direction: column;
+    }
+    .bonus-quiz.visible { display: flex; }
+    .bonus-head { font-size: 0.8rem; color: #a5b4fc; text-transform: uppercase; letter-spacing: .06em; }
+    .bonus-question { font-size: 1rem; color: #e2e8f0; font-weight: 600; line-height: 1.35; }
+    .bonus-options { display: grid; gap: 0.5rem; }
+    .bonus-opt {
+      width: 100%;
+      text-align: left;
+      background: #1e293b;
+      border: 1px solid #334155;
+      color: #cbd5e1;
+      padding: 0.65rem 0.8rem;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all .18s;
+      font-size: 0.92rem;
+      font-weight: 600;
+    }
+    .bonus-opt:hover { border-color: #6366f1; }
+    .bonus-opt.correct { border-color: #22c55e; background: #052e16; color: #86efac; }
+    .bonus-opt.wrong { border-color: #ef4444; background: #2d0f0f; color: #fca5a5; }
+    .bonus-note { font-size: 0.82rem; color: #94a3b8; }
+    .bonus-feedback { font-size: 0.9rem; font-weight: 700; min-height: 1.2rem; }
+    .bonus-feedback.ok { color: #4ade80; }
+    .bonus-feedback.no { color: #f87171; }
+
+    /* ── SCORES TABLE ── */
+    .score-table { width: 100%; border-collapse: collapse; }
+    .score-table th {
+      text-align: left; padding: 0.75rem 1rem;
+      font-size: 0.78rem; text-transform: uppercase; letter-spacing: .05em;
+      color: #64748b; border-bottom: 1px solid #334155;
+    }
+    .score-table td { padding: 0.875rem 1rem; border-bottom: 1px solid #1e293b; color: #e2e8f0; }
+    .score-table tr:hover td { background: #1a2540; }
+    .rank-badge {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 28px; height: 28px; border-radius: 50%; font-weight: 700; font-size: 0.8rem;
+    }
+    .r1 { background: #fbbf24; color: #000; }
+    .r2 { background: #94a3b8; color: #000; }
+    .r3 { background: #b45309; color: #fff; }
+    .r0 { background: #1e293b; border: 1px solid #334155; color: #64748b; }
+
+    /* ── TOAST ── */
+    .toast {
+      position: fixed; bottom: 2rem; left: 50%;
+      transform: translateX(-50%) translateY(100px);
+      background: #1e293b; border: 1px solid #334155; border-radius: 10px;
+      padding: 0.75rem 1.5rem; font-weight: 600;
+      transition: transform .3s; z-index: 200; white-space: nowrap;
+    }
+    .toast.show    { transform: translateX(-50%) translateY(0); }
+    .toast.success { border-color: #22c55e; color: #4ade80; }
+    .toast.error   { border-color: #ef4444; color: #f87171; }
+
+    /* ── MISC ── */
+    .hidden { display: none !important; }
+    .row { display: flex; gap: 1rem; flex-wrap: wrap; justify-content: center; }
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: #0f172a; }
+    ::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
+  </style>
+</head>
+<body>
+
+<!-- ════════════════════ WELCOME ════════════════════ -->
+<div id="screen-welcome" class="screen active">
+  <h1>🧮 MatSpil</h1>
+  <p class="subtitle">Vælg dit navn fra listen, eller opret en ny spiller</p>
+
+  <div class="player-list" id="playerList"></div>
+
+  <div class="row" style="margin-top:.5rem">
+    <button class="btn btn-primary" onclick="openRegisterModal()">➕ Ny spiller</button>
+    <button class="btn btn-ghost" onclick="showScreen('screen-scores')">🏆 Resultatliste</button>
+  </div>
+</div>
+
+<!-- ════════════════════ MENU ════════════════════ -->
+<div id="screen-menu" class="screen">
+  <h1>Hej, <span id="menuPlayerName"></span>! 👋</h1>
+  <h2 style="margin-top:.25rem">Vælg en udfordring</h2>
+
+  <div class="challenge-grid">
+    <div class="challenge-card" onclick="startGame('basic')">
+      <div class="challenge-icon">½</div>
+      <div class="challenge-title">Forkort brøker (1-12)</div>
+      <div class="challenge-desc">Børnevenlig start med tabeller fra 1 til 12</div>
+      <div class="challenge-badge">Fast: 5 opgaver per runde</div>
+    </div>
+    <div class="challenge-card" onclick="startGame('advanced')">
+      <div class="challenge-icon">¾</div>
+      <div class="challenge-title">Forkort brøker+ (større tal)</div>
+      <div class="challenge-desc">Samme spil, men med højere tal og sværere blanding</div>
+      <div class="challenge-badge">Fast: 5 opgaver per runde</div>
+    </div>
+  </div>
+
+  <div class="row">
+    <button class="btn btn-ghost" onclick="showScreen('screen-scores')">🏆 Resultatliste</button>
+    <button class="btn btn-ghost" onclick="openTermsModal()">📘 Begreber</button>
+    <button class="btn btn-ghost" onclick="showScreen('screen-welcome')">← Skift spiller</button>
+  </div>
+</div>
+
+<!-- ════════════════════ GAME ════════════════════ -->
+<div id="screen-game" class="screen">
+
+  <!-- Header -->
+  <div class="game-header">
+    <div class="player-tag">
+      <div class="player-avatar" id="gameAvatar">?</div>
+      <div>
+        <div style="font-weight:600" id="gamePlayerName">Spiller</div>
+        <div style="font-size:.75rem;color:#64748b">Runde <span id="roundNumber">1</span></div>
+      </div>
+    </div>
+    <div class="score-display">
+      <div class="score-item">
+        <div class="score-value" id="currentScore">0</div>
+        <div class="score-label">Point</div>
+      </div>
+      <div class="score-item">
+        <div class="score-value" id="currentErrors" style="color:#f87171">0</div>
+        <div class="score-label">Fejl</div>
+      </div>
+    </div>
+    <div class="row" style="gap:.5rem">
+      <button class="btn btn-ghost" id="cheatModeBtn" style="font-size:.875rem" onclick="toggleCheatMode()">Snydemode: OFF</button>
+      <button class="btn btn-ghost" style="font-size:.875rem" onclick="openTermsModal()">Begreber</button>
+      <button class="btn btn-ghost" style="font-size:.875rem" onclick="endGame()">Afslut</button>
+    </div>
+  </div>
+
+  <!-- Instruction -->
+  <div class="instruction" id="gameInstruction">
+    Klik på en brøk til venstre – find derefter den forkortede udgave til højre
+  </div>
+
+  <!-- Board -->
+  <div class="game-board" id="gameBoard">
+    <div class="fractions-col left"  id="leftCol"></div>
+    <div class="board-middle"></div>
+    <div class="fractions-col right" id="rightCol"></div>
+    <svg id="svgCanvas"></svg>
+  </div>
+
+  <!-- Round result banner -->
+  <div class="round-result" id="roundResult">
+    <div class="round-title">Runde gennemført! 🎉</div>
+    <div class="round-pts"    id="roundPts">+50</div>
+    <div class="round-break"  id="roundBreak"></div>
+    <div class="bonus-quiz" id="bonusQuiz">
+      <div class="bonus-head">Bonusspørgsmål (+5 ved korrekt)</div>
+      <div class="bonus-question" id="bonusQuestion"></div>
+      <div class="bonus-options" id="bonusOptions"></div>
+      <div class="bonus-note">Ingen straf ved forkert svar. Besvar for at låse næste runde op.</div>
+      <div class="bonus-feedback" id="bonusFeedback"></div>
+      <button class="btn btn-ghost hidden" id="bonusAutoBtn" onclick="cheatAnswerBonus()">Snyd: Svar korrekt</button>
+    </div>
+    <div class="round-actions">
+      <button class="btn btn-ghost"   onclick="openTermsModal()">📘 Brøk-hjælp</button>
+      <button class="btn btn-ghost hidden" id="cheatSolveBtn" onclick="cheatSolveRound()">Snyd: Auto-løs runde</button>
+      <button class="btn btn-success" id="nextRoundBtn" onclick="nextRound()">Næste runde ▶</button>
+      <button class="btn btn-ghost"   onclick="endGame()">Afslut spil</button>
+    </div>
+  </div>
+
+</div>
+
+<!-- ════════════════════ SCORES ════════════════════ -->
+<div id="screen-scores" class="screen">
+  <h1>🏆 Resultatliste</h1>
+  <div class="card" style="max-width:680px;padding:0;overflow:hidden">
+    <table class="score-table">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Spiller</th>
+          <th>Bedste score</th>
+          <th>Dato</th>
+          <th>Antal spil</th>
+        </tr>
+      </thead>
+      <tbody id="scoresBody"></tbody>
+    </table>
+  </div>
+  <button class="btn btn-ghost" onclick="goBackFromScores()">← Tilbage</button>
+</div>
+
+<!-- ════════════════════ REGISTER MODAL ════════════════════ -->
+<div class="modal-overlay" id="registerModal">
+  <div class="modal">
+    <h3>Ny spiller</h3>
+    <div class="input-group">
+      <label for="nameInput">Dit navn</label>
+      <input id="nameInput" type="text" placeholder="Indtast dit navn…" maxlength="30"
+             onkeydown="if(event.key==='Enter') registerPlayer()" autocomplete="off" />
+    </div>
+    <div id="registerError" style="color:#f87171;font-size:.85rem;display:none"></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost"   onclick="closeRegisterModal()">Annuller</button>
+      <button class="btn btn-primary" onclick="registerPlayer()">Opret ✓</button>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════ TERMS MODAL ════════════════════ -->
+<div class="modal-overlay" id="termsModal">
+  <div class="modal learn-modal">
+    <h3>Brøk-hjælp: tæller, nævner og heltal</h3>
+    <p class="learn-intro">Her er en enkel visning af, hvordan du læser en brøk og et blandet tal.</p>
+
+    <div class="term-grid">
+      <div class="term-card">
+        <div class="term-title">Ægte brøk</div>
+        <div class="chip-row">
+          <span class="term-chip good">tæller er mindre end nævner</span>
+          <span class="term-chip good">værdi er mindre end 1</span>
+        </div>
+        <div class="term-rule">Eksempel: 3/4. Brøken er mindre end én hel.</div>
+        <div class="fraction-visual">
+          <div class="pizza" style="--fill:75" aria-label="Pizza med tre ud af fire stykker">
+            <span class="pizza-cut radial" style="--angle:0deg"></span>
+            <span class="pizza-cut radial" style="--angle:90deg"></span>
+            <span class="pizza-cut crust"></span>
+          </div>
+          <div class="visual-text">3/4 = tre af fire pizzastykker er farvet.</div>
+        </div>
+      </div>
+
+      <div class="term-card">
+        <div class="term-title">Uægte brøk</div>
+        <div class="chip-row">
+          <span class="term-chip warn">tæller er større end eller lig nævner</span>
+          <span class="term-chip warn">værdi er 1 eller større</span>
+        </div>
+        <div class="term-rule">Eksempel: 5/4. Brøken er mindst én hel.</div>
+        <div class="fraction-visual">
+          <div class="pizza" style="--fill:100" aria-label="En hel pizza">
+            <span class="pizza-cut radial" style="--angle:0deg"></span>
+            <span class="pizza-cut radial" style="--angle:90deg"></span>
+            <span class="pizza-cut crust"></span>
+          </div>
+          <div class="pizza" style="--fill:25" aria-label="En fjerdedel pizza">
+            <span class="pizza-cut radial" style="--angle:0deg"></span>
+            <span class="pizza-cut radial" style="--angle:90deg"></span>
+            <span class="pizza-cut crust"></span>
+          </div>
+          <div class="visual-text">5/4 = 1 hel pizza + 1/4 pizza.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="concept-card">
+      <div class="concept-title">Sådan læser du tallene</div>
+      <div class="concept-demo-grid">
+        <div class="concept-demo">
+          <div class="demo-title">Brøk</div>
+          <div class="frac-stack" aria-label="Brøk 3 over 4">
+            <span class="frac-num">3</span>
+            <span class="frac-line"></span>
+            <span class="frac-den">4</span>
+          </div>
+          <div class="demo-explain"><strong>Tæller</strong> er tallet øverst: 3</div>
+          <div class="demo-explain"><strong>Nævner</strong> er tallet nederst: 4</div>
+        </div>
+        <div class="concept-demo">
+          <div class="demo-title">Blandet tal</div>
+          <div class="mixed-inline" aria-label="Blandet tal 1 og 3 fjerdedele">
+            <span class="whole-pill">1</span>
+            <div class="frac-stack">
+              <span class="frac-num">3</span>
+              <span class="frac-line"></span>
+              <span class="frac-den">4</span>
+            </div>
+          </div>
+          <div class="demo-explain"><strong>Heltal</strong> er tallet til venstre: 1</div>
+          <div class="demo-explain">Her betyder <strong>1 3/4</strong>: én hel og tre fjerdedele</div>
+        </div>
+      </div>
+      <div class="concept-defs">
+        <div><strong>Tæller:</strong> hvor mange dele du har.</div>
+        <div><strong>Nævner:</strong> hvor mange lige store dele helheden er delt i.</div>
+        <div><strong>Heltal:</strong> hvor mange hele du har.</div>
+      </div>
+    </div>
+
+    <div class="card" style="background:#0f172a;border-color:#334155;padding:1rem">
+      <div style="font-weight:700;color:#c7d2fe;margin-bottom:.45rem">Huskeregel</div>
+      <div style="color:#94a3b8;font-size:.92rem;line-height:1.4">
+        Hvis tælleren er mindre end nævneren, er det en ægte brøk. Hvis tælleren er større end eller lig nævneren,
+        er det en uægte brøk.
+      </div>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn btn-primary" onclick="closeTermsModal()">Luk</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ═══════════════════════════════════════════════════
+//  DATA
+// ═══════════════════════════════════════════════════
+const DATA_KEY = 'matSpil_v1';
+
+function loadData() {
+  try {
+    const raw = localStorage.getItem(DATA_KEY);
+    return raw ? JSON.parse(raw) : { players: [] };
+  } catch { return { players: [] }; }
+}
+
+function saveData(data) {
+  localStorage.setItem(DATA_KEY, JSON.stringify(data));
+}
+
+function getPlayers() { return loadData().players; }
+
+function getBestScore(player) {
+  if (!player.scores || player.scores.length === 0) return null;
+  return player.scores.reduce((b, s) => s.score > b.score ? s : b, player.scores[0]);
+}
+
+// ═══════════════════════════════════════════════════
+//  MATH HELPERS
+// ═══════════════════════════════════════════════════
+function gcd(a, b) { return b === 0 ? a : gcd(b, a % b); }
+
+function clamp(v, min, max) { return Math.max(min, Math.min(max, v)); }
+
+function getRoundParams(round) {
+  const t = clamp((round - 1) / 9, 0, 1);
+  const difficultyScore = 1 + t * 9;
+  const level = difficultyScore < 4 ? 1 : difficultyScore < 7 ? 2 : 3;
+  const isAdvanced = G.mode === 'advanced';
+  const baseNumStart = isAdvanced ? 14 : 12;
+  const baseNumEnd = isAdvanced ? 30 : 12;
+  const baseDenStart = isAdvanced ? 14 : 12;
+  const baseDenEnd = isAdvanced ? 32 : 12;
+  const factorStart = isAdvanced ? 3 : 2;
+  const factorEnd = isAdvanced ? 14 : 12;
+  return {
+    difficultyScore,
+    level,
+    pairCount: 5,
+    improperRatio: level === 1 ? 0 : level === 2 ? 0.3 : 0.6,
+    maxBaseNum: Math.round(baseNumStart + t * (baseNumEnd - baseNumStart)),
+    maxBaseDen: Math.round(baseDenStart + t * (baseDenEnd - baseDenStart)),
+    factorMin: factorStart,
+    factorMax: Math.round(factorStart + t * (factorEnd - factorStart)),
+  };
+}
+
+function loadPlayerTiming() {
+  const data = loadData();
+  const p = data.players.find(x => x.name === G.player.name);
+  const baseline = p && typeof p.timingBaselineSec === 'number' ? p.timingBaselineSec : 45;
+  const target = p && typeof p.targetTimeSec === 'number' ? p.targetTimeSec : baseline;
+  G.timingBaselineSec = clamp(baseline, 18, 75);
+  G.targetTimeSec = clamp(target, 18, 75);
+}
+
+function calcSpeedBonus(basePoints, roundTimeSec, targetTimeSec) {
+  if (roundTimeSec > targetTimeSec) return 0;
+  const x = 1 - roundTimeSec / targetTimeSec;
+  const pct = Math.min(0.6, 0.10 + 0.50 * Math.pow(x, 1.7));
+  return Math.round(basePoints * pct);
+}
+
+function updateTimingModel(roundTimeSec) {
+  G.timingBaselineSec = 0.75 * G.timingBaselineSec + 0.25 * roundTimeSec;
+  const squeeze = 1 - 0.03 * Math.min(G.round, 10);
+  G.targetTimeSec = clamp(G.timingBaselineSec * squeeze, 18, 75);
+}
+
+function generatePairs(count = 5, cfg = {}) {
+  const pairs = [];
+  const usedReduced  = new Set();
+  const usedOriginal = new Set();
+  const improperRatio = typeof cfg.improperRatio === 'number' ? cfg.improperRatio : 0;
+  const maxBaseNum = cfg.maxBaseNum || 9;
+  const maxBaseDen = cfg.maxBaseDen || 10;
+  const factorMin = cfg.factorMin || 2;
+  const factorMax = cfg.factorMax || 6;
+  let tries = 0;
+
+  while (pairs.length < count && tries < 2000) {
+    tries++;
+    const den = Math.floor(Math.random() * (maxBaseDen - 1)) + 2;
+    const makeImproper = Math.random() < improperRatio;
+
+    let num;
+    if (makeImproper) {
+      if (maxBaseNum <= den) continue;
+      num = Math.floor(Math.random() * (maxBaseNum - den)) + den + 1;
+    } else {
+      if (den <= 1) continue;
+      num = Math.floor(Math.random() * (den - 1)) + 1;
+    }
+
+    if (num === den)             continue;
+    if (gcd(num, den) !== 1)     continue;
+
+    const rKey = `${num}/${den}`;
+    if (usedReduced.has(rKey))   continue;
+
+    const factorRange = Math.max(1, factorMax - factorMin + 1);
+    const factor = Math.floor(Math.random() * factorRange) + factorMin;
+    const oKey    = `${num * factor}/${den * factor}`;
+    if (usedOriginal.has(oKey))  continue;
+
+    usedReduced.add(rKey);
+    usedOriginal.add(oKey);
+
+    pairs.push({
+      id:       pairs.length,
+      original: { num: num * factor, den: den * factor },
+      reduced:  { num, den },
+    });
+  }
+  return pairs;
+}
+
+// ═══════════════════════════════════════════════════
+//  GAME STATE
+// ═══════════════════════════════════════════════════
+const G = {
+  player:          null,
+  score:           0,
+  round:           0,
+  difficultyScore: 1,
+  level:           1,
+  mode:            'basic',
+  fractions:       [],
+  selectedLeftId:  null,
+  matched:         new Set(),
+  roundErrors:     0,
+  totalErrors:     0,
+  roundStartAt:    0,
+  roundTimeSec:    0,
+  speedBonus:      0,
+  targetTimeSec:   45,
+  timingBaselineSec: 45,
+  lastBonusId:     null,
+  bonusAnswered:   false,
+  cheatMode:       false,
+};
+
+const BONUS_QUESTIONS = [
+  {
+    id: 'q1',
+    question: 'Hvad kaldes tallet over brøkstregen i en brøk?',
+    options: ['Nævner', 'Tæller', 'Faktor'],
+    correct: 1,
+  },
+  {
+    id: 'q2',
+    question: 'Hvad kaldes tallet under brøkstregen i en brøk?',
+    options: ['Nævner', 'Tæller', 'Kvotient'],
+    correct: 0,
+  },
+  {
+    id: 'q3',
+    question: 'Hvornår er en brøk en ægte brøk?',
+    options: ['Når tæller er mindre end nævner', 'Når tæller er større end eller lig nævner', 'Når nævner er 1'],
+    correct: 0,
+  },
+  {
+    id: 'q4',
+    question: 'Hvornår er en brøk en uægte brøk?',
+    options: ['Når tæller er mindre end nævner', 'Når tæller er større end eller lig nævner', 'Når tæller er 0'],
+    correct: 1,
+  },
+  {
+    id: 'q5',
+    question: 'Hvad betyder det at forkorte en brøk?',
+    options: ['At gange tæller og nævner med samme tal', 'At gøre brøken negativ', 'At dividere tæller og nævner med det samme tal, som er større end 1'],
+    correct: 2,
+  },
+];
+
+// ═══════════════════════════════════════════════════
+//  SCREEN NAVIGATION
+// ═══════════════════════════════════════════════════
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  if (id === 'screen-welcome') renderWelcome();
+  if (id === 'screen-scores')  renderScores();
+}
+
+function goBackFromScores() {
+  showScreen(G.player ? 'screen-menu' : 'screen-welcome');
+}
+
+// ═══════════════════════════════════════════════════
+//  WELCOME / REGISTRATION
+// ═══════════════════════════════════════════════════
+function renderWelcome() {
+  const players = getPlayers();
+  const list    = document.getElementById('playerList');
+
+  if (players.length === 0) {
+    list.innerHTML = '<div class="empty-state">Ingen spillere endnu – opret den første!</div>';
+    return;
+  }
+
+  list.innerHTML = players.map((p, i) => {
+    const best     = getBestScore(p);
+    const initials = p.name.slice(0, 2).toUpperCase();
+    return `
+      <div class="player-item" onclick="selectPlayer(${i})">
+        <div class="player-avatar">${esc(initials)}</div>
+        <div class="player-info">
+          <div class="player-name">${esc(p.name)}</div>
+          <div class="player-best">${best ? `Bedste score: ${best.score} point` : 'Ingen spil endnu'}</div>
+        </div>
+        <span style="color:#475569">›</span>
+      </div>`;
+  }).join('');
+}
+
+function selectPlayer(i) {
+  const players = getPlayers();
+  if (i >= players.length) return;
+  G.player = players[i];
+  document.getElementById('menuPlayerName').textContent = G.player.name;
+  showScreen('screen-menu');
+}
+
+function openRegisterModal() {
+  document.getElementById('nameInput').value = '';
+  setRegisterError('');
+  document.getElementById('registerModal').classList.add('active');
+  setTimeout(() => document.getElementById('nameInput').focus(), 80);
+}
+
+function closeRegisterModal() {
+  document.getElementById('registerModal').classList.remove('active');
+}
+
+function openTermsModal() {
+  document.getElementById('termsModal').classList.add('active');
+}
+
+function closeTermsModal() {
+  document.getElementById('termsModal').classList.remove('active');
+}
+
+function setRegisterError(msg) {
+  const el = document.getElementById('registerError');
+  el.textContent = msg;
+  el.style.display = msg ? 'block' : 'none';
+}
+
+function registerPlayer() {
+  const raw  = document.getElementById('nameInput').value;
+  const name = raw.trim();
+
+  if (!name) { setRegisterError('Indtast venligst et navn'); return; }
+  if (name.length < 2) { setRegisterError('Navnet skal have mindst 2 tegn'); return; }
+
+  const data = loadData();
+  if (data.players.some(p => p.name.toLowerCase() === name.toLowerCase())) {
+    setRegisterError('Det navn er allerede i brug');
+    return;
+  }
+
+  data.players.push({ name, scores: [] });
+  saveData(data);
+  closeRegisterModal();
+  renderWelcome();
+  showToast(`Velkommen, ${name}! 🎉`, 'success');
+  // Auto-select after short delay
+  setTimeout(() => {
+    const idx = getPlayers().findIndex(p => p.name.toLowerCase() === name.toLowerCase());
+    if (idx !== -1) selectPlayer(idx);
+  }, 600);
+}
+
+// ═══════════════════════════════════════════════════
+//  GAME SETUP
+// ═══════════════════════════════════════════════════
+function startGame(mode = 'basic') {
+  G.score       = 0;
+  G.round       = 0;
+  G.totalErrors = 0;
+  G.difficultyScore = 1;
+  G.level = 1;
+  G.mode = mode === 'advanced' ? 'advanced' : 'basic';
+  loadPlayerTiming();
+  document.getElementById('gamePlayerName').textContent     = G.player.name;
+  document.getElementById('gameAvatar').textContent         = G.player.name.slice(0, 2).toUpperCase();
+  showScreen('screen-game');
+  startRound();
+}
+
+function startRound() {
+  G.round++;
+  G.roundErrors    = 0;
+  G.selectedLeftId = null;
+  G.matched        = new Set();
+  G.bonusAnswered  = false;
+  G.roundStartAt   = Date.now();
+
+  const params = getRoundParams(G.round);
+  G.difficultyScore = params.difficultyScore;
+  G.level = params.level;
+  G.fractions = generatePairs(params.pairCount, params);
+
+  document.getElementById('roundNumber').textContent  = G.round;
+  document.getElementById('currentScore').textContent = G.score;
+  document.getElementById('currentErrors').textContent= G.totalErrors;
+  document.getElementById('roundResult').classList.remove('visible');
+  document.getElementById('bonusQuiz').classList.remove('visible');
+  document.getElementById('bonusFeedback').textContent = '';
+  document.getElementById('nextRoundBtn').disabled = false;
+  updateCheatUi();
+  const modeLabel = G.mode === 'advanced' ? 'Brøker+ (større tal)' : 'Brøker 1-12';
+  setInstruction(`${modeLabel} | Niveau ${G.level}: 5 opgaver. Tidsmål: ${Math.round(G.targetTimeSec)} sek.`);
+
+  clearSvg();
+  renderBoard();
+}
+
+function nextRound() { startRound(); }
+
+function endGame() {
+  if (G.score > 0) persistScore();
+  showScreen('screen-menu');
+}
+
+function persistScore() {
+  const data     = loadData();
+  const playerIdx = data.players.findIndex(p => p.name === G.player.name);
+  if (playerIdx === -1) return;
+
+  data.players[playerIdx].scores = data.players[playerIdx].scores || [];
+  data.players[playerIdx].scores.push({
+    score:  G.score,
+    date:   new Date().toLocaleDateString('da-DK'),
+    rounds: G.round,
+    basePoints: G.fractions.length * 10,
+    speedBonus: G.speedBonus,
+    roundTimeSec: Number(G.roundTimeSec.toFixed(1)),
+    targetTimeSec: Math.round(G.targetTimeSec),
+    level: G.level,
+  });
+  data.players[playerIdx].timingBaselineSec = Number(G.timingBaselineSec.toFixed(2));
+  data.players[playerIdx].targetTimeSec = Number(G.targetTimeSec.toFixed(2));
+  // Keep only top 20 scores per player
+  data.players[playerIdx].scores.sort((a, b) => b.score - a.score);
+  if (data.players[playerIdx].scores.length > 20)
+    data.players[playerIdx].scores.length = 20;
+
+  saveData(data);
+  G.player = data.players[playerIdx];
+}
+
+// ═══════════════════════════════════════════════════
+//  BOARD RENDERING
+// ═══════════════════════════════════════════════════
+function renderBoard() {
+  const leftCol  = document.getElementById('leftCol');
+  const rightCol = document.getElementById('rightCol');
+
+  leftCol.innerHTML = G.fractions.map(f => `
+    <div class="frac-card" id="L${f.id}" onclick="onClickLeft(${f.id})">
+      ${fracHtml(f.original)}
+    </div>`).join('');
+
+  const shuffled = [...G.fractions].sort(() => Math.random() - .5);
+  rightCol.innerHTML = shuffled.map(f => `
+    <div class="frac-card" id="R${f.id}" onclick="onClickRight(${f.id})">
+      ${fracHtml(f.reduced, 'mixed')}
+    </div>`).join('');
+}
+
+function fracHtml(f, mode = 'fraction') {
+  if (mode !== 'mixed') {
+    return `<div class="fraction"><span class="n">${f.num}</span><span class="d">${f.den}</span></div>`;
+  }
+
+  const whole = Math.floor(f.num / f.den);
+  const rem = f.num % f.den;
+
+  if (rem === 0) {
+    return `<div class="mixed-num"><span class="mixed-whole">${whole}</span></div>`;
+  }
+  if (whole === 0) {
+    return `<div class="fraction"><span class="n">${rem}</span><span class="d">${f.den}</span></div>`;
+  }
+
+  return `<div class="mixed-num"><span class="mixed-whole">${whole}</span><span class="fraction"><span class="n">${rem}</span><span class="d">${f.den}</span></span></div>`;
+}
+
+// ═══════════════════════════════════════════════════
+//  GAME LOGIC
+// ═══════════════════════════════════════════════════
+function onClickLeft(id) {
+  const card = document.getElementById(`L${id}`);
+  if (card.classList.contains('matched')) return;
+
+  // Deselect previous
+  if (G.selectedLeftId !== null) {
+    const prev = document.getElementById(`L${G.selectedLeftId}`);
+    if (prev) prev.classList.remove('selected');
+  }
+  G.selectedLeftId = id;
+  card.classList.add('selected');
+
+  if (G.cheatMode) {
+    // In cheat mode, a left-click immediately matches with the correct right card.
+    onClickRight(id);
+    return;
+  }
+
+  setInstruction('Klik nu på den forkortede udgave til højre');
+}
+
+function onClickRight(id) {
+  if (G.selectedLeftId === null) {
+    showToast('Vælg først en brøk til venstre', 'error');
+    return;
+  }
+  const rightCard = document.getElementById(`R${id}`);
+  if (rightCard.classList.contains('matched')) return;
+
+  const leftCard = document.getElementById(`L${G.selectedLeftId}`);
+
+  if (G.selectedLeftId === id) {
+    // ✅ Correct
+    leftCard.classList.remove('selected');
+    leftCard.classList.add('matched');
+    rightCard.classList.add('matched');
+    G.matched.add(id);
+    drawLine(leftCard, rightCard, true);
+
+    G.score += 10;
+    document.getElementById('currentScore').textContent = G.score;
+    G.selectedLeftId = null;
+
+    if (G.matched.size === G.fractions.length) {
+      setTimeout(showRoundComplete, 450);
+    } else {
+      setInstruction('Klik på en brøk til venstre – find derefter den forkortede udgave til højre');
+    }
+  } else {
+    // ❌ Wrong
+    G.roundErrors++;
+    G.totalErrors++;
+    document.getElementById('currentErrors').textContent = G.totalErrors;
+
+    leftCard.classList.add('error');
+    rightCard.classList.add('error');
+    const line = drawLine(leftCard, rightCard, false);
+
+    setTimeout(() => {
+      leftCard.classList.remove('error');
+      rightCard.classList.remove('error');
+      if (line && line.parentNode) line.parentNode.removeChild(line);
+    }, 750);
+  }
+}
+
+// ═══════════════════════════════════════════════════
+//  SVG LINE DRAWING
+// ═══════════════════════════════════════════════════
+function clearSvg() {
+  const svg = document.getElementById('svgCanvas');
+  while (svg.firstChild) svg.removeChild(svg.firstChild);
+}
+
+function drawLine(leftEl, rightEl, correct) {
+  const svg     = document.getElementById('svgCanvas');
+  const svgRect = svg.getBoundingClientRect();
+  const lr      = leftEl.getBoundingClientRect();
+  const rr      = rightEl.getBoundingClientRect();
+
+  const x1 = lr.right  - svgRect.left;
+  const y1 = lr.top    + lr.height / 2 - svgRect.top;
+  const x2 = rr.left   - svgRect.left;
+  const y2 = rr.top    + rr.height / 2 - svgRect.top;
+
+  const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+  line.setAttribute('x1', x1);
+  line.setAttribute('y1', y1);
+  line.setAttribute('x2', x2);
+  line.setAttribute('y2', y2);
+  line.setAttribute('stroke',         correct ? '#22c55e' : '#ef4444');
+  line.setAttribute('stroke-width',   correct ? '3'      : '2');
+  line.setAttribute('stroke-linecap', 'round');
+  line.setAttribute('opacity',        correct ? '0.85'   : '0.7');
+  if (!correct) line.setAttribute('stroke-dasharray', '6 4');
+  svg.appendChild(line);
+  return line;
+}
+
+// ═══════════════════════════════════════════════════
+//  ROUND COMPLETE
+// ═══════════════════════════════════════════════════
+function showRoundComplete() {
+  G.roundTimeSec = (Date.now() - G.roundStartAt) / 1000;
+  const targetBeforeUpdate = G.targetTimeSec;
+  const basePoints = G.fractions.length * 10;
+  G.speedBonus = calcSpeedBonus(basePoints, G.roundTimeSec, targetBeforeUpdate);
+  G.score += G.speedBonus;
+  updateTimingModel(G.roundTimeSec);
+
+  const roundPoints = basePoints + G.speedBonus;
+  document.getElementById('currentScore').textContent = G.score;
+
+  let breakdown = `${G.fractions.length} korrekte × 10 = ${basePoints} point`;
+  if (G.speedBonus > 0) breakdown += ` + ${G.speedBonus} tidsbonus`;
+  else breakdown += ' + 0 tidsbonus';
+  breakdown += ` | tid: ${G.roundTimeSec.toFixed(1)}s | mål: ${Math.round(targetBeforeUpdate)}s`;
+  breakdown += ` | næste mål: ${Math.round(G.targetTimeSec)}s`;
+
+  document.getElementById('roundPts').textContent   = `+${roundPoints}`;
+  document.getElementById('roundBreak').textContent = breakdown;
+  document.getElementById('roundResult').classList.add('visible');
+  prepareBonusQuestion();
+  setInstruction('Runde fuldført!');
+}
+
+function pickBonusQuestion() {
+  const pool = BONUS_QUESTIONS.filter(q => q.id !== G.lastBonusId);
+  const list = pool.length ? pool : BONUS_QUESTIONS;
+  return list[Math.floor(Math.random() * list.length)];
+}
+
+function prepareBonusQuestion() {
+  const q = pickBonusQuestion();
+  const qEl = document.getElementById('bonusQuestion');
+  const oEl = document.getElementById('bonusOptions');
+  const fEl = document.getElementById('bonusFeedback');
+  const nEl = document.getElementById('nextRoundBtn');
+
+  G.bonusAnswered = false;
+  nEl.disabled = true;
+  fEl.textContent = '';
+  fEl.className = 'bonus-feedback';
+  G.currentBonusQuestion = q;
+  G.lastBonusId = q.id;
+
+  qEl.textContent = q.question;
+  oEl.innerHTML = q.options.map((opt, idx) => (
+    `<button class="bonus-opt" onclick="answerBonusQuestion(${idx})">${esc(opt)}</button>`
+  )).join('');
+  document.getElementById('bonusQuiz').classList.add('visible');
+  updateCheatUi();
+}
+
+function answerBonusQuestion(idx) {
+  if (G.bonusAnswered || !G.currentBonusQuestion) return;
+  const q = G.currentBonusQuestion;
+  const options = Array.from(document.querySelectorAll('#bonusOptions .bonus-opt'));
+  const feedback = document.getElementById('bonusFeedback');
+  const nextBtn = document.getElementById('nextRoundBtn');
+
+  options.forEach((btn, i) => {
+    btn.disabled = true;
+    if (i === q.correct) btn.classList.add('correct');
+    if (i === idx && i !== q.correct) btn.classList.add('wrong');
+  });
+
+  if (idx === q.correct) {
+    G.score += 5;
+    document.getElementById('currentScore').textContent = G.score;
+    feedback.textContent = 'Korrekt! Du fik +5 bonuspoint.';
+    feedback.className = 'bonus-feedback ok';
+  } else {
+    feedback.textContent = 'Ikke helt rigtigt. Ingen straf - prøv igen næste runde.';
+    feedback.className = 'bonus-feedback no';
+  }
+
+  G.bonusAnswered = true;
+  nextBtn.disabled = false;
+}
+
+function toggleCheatMode() {
+  G.cheatMode = !G.cheatMode;
+  updateCheatUi();
+  showToast(G.cheatMode ? 'Snydemode er ON' : 'Snydemode er OFF', 'success');
+}
+
+function updateCheatUi() {
+  const cheatBtn = document.getElementById('cheatModeBtn');
+  const solveBtn = document.getElementById('cheatSolveBtn');
+  const bonusBtn = document.getElementById('bonusAutoBtn');
+  if (cheatBtn) {
+    cheatBtn.textContent = `Snydemode: ${G.cheatMode ? 'ON' : 'OFF'}`;
+    cheatBtn.style.borderColor = G.cheatMode ? '#22c55e' : '#334155';
+    cheatBtn.style.color = G.cheatMode ? '#86efac' : '#94a3b8';
+  }
+  if (solveBtn) solveBtn.classList.toggle('hidden', !G.cheatMode);
+
+  const bonusVisible = document.getElementById('bonusQuiz')?.classList.contains('visible');
+  if (bonusBtn) bonusBtn.classList.toggle('hidden', !(G.cheatMode && bonusVisible));
+}
+
+function cheatSolveRound() {
+  if (!G.cheatMode) return;
+  if (document.getElementById('roundResult').classList.contains('visible')) return;
+
+  G.fractions.forEach((f) => {
+    if (G.matched.has(f.id)) return;
+    const leftCard = document.getElementById(`L${f.id}`);
+    if (!leftCard || leftCard.classList.contains('matched')) return;
+    G.selectedLeftId = f.id;
+    leftCard.classList.add('selected');
+    onClickRight(f.id);
+  });
+}
+
+function cheatAnswerBonus() {
+  if (!G.cheatMode || G.bonusAnswered || !G.currentBonusQuestion) return;
+  answerBonusQuestion(G.currentBonusQuestion.correct);
+}
+
+// ═══════════════════════════════════════════════════
+//  SCORES SCREEN
+// ═══════════════════════════════════════════════════
+function renderScores() {
+  const players = getPlayers();
+  const tbody   = document.getElementById('scoresBody');
+
+  const rows = players
+    .filter(p => p.scores && p.scores.length > 0)
+    .map(p => {
+      const best = getBestScore(p);
+      return { name: p.name, score: best.score, date: best.date, games: p.scores.length };
+    })
+    .sort((a, b) => b.score - a.score);
+
+  if (rows.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="5" class="empty-state" style="padding:2rem">Ingen resultater endnu</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = rows.map((r, i) => {
+    const rank  = i + 1;
+    const cls   = rank <= 3 ? `r${rank}` : 'r0';
+    return `
+      <tr>
+        <td><span class="rank-badge ${cls}">${rank}</span></td>
+        <td style="font-weight:600">${esc(r.name)}</td>
+        <td style="color:#a78bfa;font-weight:700">${r.score}</td>
+        <td style="color:#64748b">${r.date}</td>
+        <td style="color:#64748b">${r.games}</td>
+      </tr>`;
+  }).join('');
+}
+
+// ═══════════════════════════════════════════════════
+//  UTILITIES
+// ═══════════════════════════════════════════════════
+let _toastTimer = null;
+function showToast(msg, type = 'success') {
+  const t   = document.getElementById('toast');
+  t.textContent = msg;
+  t.className   = `toast ${type} show`;
+  if (_toastTimer) clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(() => t.classList.remove('show'), 2600);
+}
+
+function setInstruction(txt) {
+  document.getElementById('gameInstruction').textContent = txt;
+}
+
+function esc(str) {
+  const d = document.createElement('div');
+  d.appendChild(document.createTextNode(String(str)));
+  return d.innerHTML;
+}
+
+// ═══════════════════════════════════════════════════
+//  INIT
+// ═══════════════════════════════════════════════════
+updateCheatUi();
+renderWelcome();
+</script>
+</body>
+</html>
